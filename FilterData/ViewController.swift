@@ -21,94 +21,93 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        if self.someEntityExists(){
+            print("check values: \(self.someEntityExists())")
+        }else{
+            saveToCoreData()
+        }
         
-        
-        
+    }
+    
+    @IBAction func showData(_ sender: Any) {
+        let storyBoard = UIStoryboard(name:"Main",bundle:nil)
+        let nextVC = storyBoard.instantiateViewController(withIdentifier: "TableViewController") as! TableViewController
+        navigationController?.pushViewController(nextVC, animated: true)
+    }
+    
+    
+    func saveToCoreData(){
         
         Alamofire.request(url, method: .post, parameters: param).responseString{ response in
             let JSONData = response.data!
             do{
                 let readableJSON = try JSONSerialization.jsonObject(with: JSONData, options: .allowFragments) as! NSArray
-        
-//                for i in 0..<readableJSON.count
-//                {
-//                    let obj = readableJSON[i] as! [String:AnyObject]
-//                    var tempDict:[String:Any] = [:]
-//                    tempDict["category_id"] = obj["category_id"] as! String
-//                    tempDict["category_name"] = obj["category_name"] as! String
-//                    tempDict["customer_id"] = obj["customer_id"] as! String
-//                    tempDict["parent_id"] = obj["parent_id"] as! String
-//                    self.medicineDtls.append(tempDict as [String : AnyObject])
-//
-//                    // storing data to Core Data
-//                    let appDelegate = UIApplication.shared.delegate as! AppDelegate
-//                    let context = appDelegate.persistentContainer.viewContext
-//                    let category = NSEntityDescription.insertNewObject(forEntityName: "Categories", into: context)
-//                    category.setValue(obj["category_id"] as! String, forKey: "category_id")
-//                    category.setValue(obj["category_name"] as! String, forKey: "category_name")
-//                    category.setValue(obj["customer_id"] as! String, forKey: "customer_id")
-//                    category.setValue(obj["parent_id"] as! String, forKey: "parent_id")
-//
-//                    do{
-//                        try context.save()
-//                        print("SAVED")
-//                    }catch{
-//
-//                    }
-//                }
-               // print(self.medicineDtls)
-//              self.tableView.reloadData()
                 
-                
-                // Fetching data from Core Data by making Query
-                let appDelegate = UIApplication.shared.delegate as! AppDelegate
-                let context = appDelegate.persistentContainer.viewContext
-                var request = NSFetchRequest<NSFetchRequestResult>(entityName: "Categories")
-                request.predicate = NSPredicate(format: " parent_id == %@", "0")  //exception occurs on this string
-                request.returnsObjectsAsFaults = false
-               // var results: NSArray = NSArray()
-                do{
-                   let results = try context.fetch(request) as NSArray
+                print(readableJSON)
+                for i in 0..<readableJSON.count
+                {
+                    let obj = readableJSON[i] as! [String:AnyObject]
+                    var tempDict:[String:Any] = [:]
+                    var dicData = ["name":"Kashee","age":"26","lastName":"Kushwaha","address":"Majhguwan"]
+                    tempDict["category_id"] = obj["category_id"] as! String
+                    tempDict["category_name"] = obj["category_name"] as! String
+                    tempDict["customer_id"] = obj["customer_id"] as! String
+                    tempDict["parent_id"] = obj["parent_id"] as! String
+                    self.medicineDtls.append(tempDict as [String : AnyObject])
                     
-                    var arr = [[String:AnyObject]]()
-                    var data=[String:AnyObject]()
-                    if results.count > 0{
-                        for result in results as! [NSManagedObject]{
-                            if let medicineName = result.value(forKey: "category_id") as? String{
-                                data["category_id"]=medicineName as AnyObject
-                            }
-                            if let doseAmount = result.value(forKey: "category_name") as? String{
-                                data["category_name"] = doseAmount as AnyObject
-                            }
-                            if let numberofTimes = result.value(forKey: "customer_id") as? String{
-                                data["customer_id"] = numberofTimes as AnyObject
-                            }
-                            if let numberofTimes = result.value(forKey: "parent_id") as? String{
-                                data["parent_id"] = numberofTimes as AnyObject
-                            }
-                            arr.append(data)
-//                            medicineDtls.append(data)
-//                            tableView.reloadData()
-                        }
+                    // storing data to Core Data
+                    let appDelegate = UIApplication.shared.delegate as! AppDelegate
+                    let context = appDelegate.persistentContainer.viewContext
+                    let category = NSEntityDescription.insertNewObject(forEntityName: "Categories", into: context)
+                    category.setValue(obj["category_id"] as! String, forKey: "category_id")
+                    category.setValue(obj["category_name"] as! String, forKey: "category_name")
+                    category.setValue(obj["customer_id"] as! String, forKey: "customer_id")
+                    category.setValue(obj["parent_id"] as! String, forKey: "parent_id")
+                    // storing dictionary value directly to CoreData
+                    category.setValue(dicData, forKey: "dicData")
+                    
+                    do{
+                        try context.save()
+                        print("SAVED")
+                    }catch{
+                        
                     }
                     
-                    print(arr)
                 }
-                    
-                catch{}
+                //  print(self.medicineDtls)
+                //  self.tableView.reloadData()
                 
             }catch{
                 
             }
             
-            // Fetching data Array of Dictionary by making Query
+            //  Fetching data Array of Dictionary by making Query // not from coredata
             let firstNamePredicate = NSPredicate(format: " parent_id == %@", "0")
             self.filtered = (self.medicineDtls as NSArray).filtered(using: firstNamePredicate) as! [[String : AnyObject]]
             print(self.filtered)
             
             
         }
+    }
+    
+    
+    func someEntityExists() -> Bool {
         
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        let context = appDelegate.persistentContainer.viewContext
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Categories")
+        fetchRequest.includesSubentities = false
+        
+        var entitiesCount = 0
+        
+        do {
+            entitiesCount = try context.count(for: fetchRequest)
+        }
+        catch {
+            print("error executing fetch request: \(error)")
+        }
+        
+        return entitiesCount > 0
     }
 
     override func didReceiveMemoryWarning() {
